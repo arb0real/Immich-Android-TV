@@ -18,8 +18,19 @@ class SliderItem(
     private val metaData: Map<MetaDataType, MetaDataProvider>,
     val thumbnailUrl: String?,
     val isPanorama: Boolean,
-    var isFavorite: Boolean = false
+    var isFavorite: Boolean = false,
+    private val focusAreaProvider: FocusAreaProvider? = null
 ) {
+    @Volatile
+    private var focusAreas: List<FocusArea>? = null
+
+    suspend fun getFocusAreas(): List<FocusArea> {
+        focusAreas?.let { return it }
+        val areas = focusAreaProvider?.getFocusAreas() ?: emptyList()
+        focusAreas = areas
+        return areas
+    }
+
     suspend fun get(metaDataType: MetaDataType): String? {
         return this.metaData[metaDataType]?.getValue()
     }

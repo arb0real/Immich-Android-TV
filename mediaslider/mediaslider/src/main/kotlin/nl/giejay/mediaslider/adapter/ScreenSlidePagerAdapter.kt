@@ -14,8 +14,16 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.zeuskartik.mediaslider.R
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import nl.giejay.mediaslider.player.AmlogicSafeRenderersFactory
 import nl.giejay.mediaslider.config.MediaSliderConfiguration
+import nl.giejay.mediaslider.model.FocusArea
 import nl.giejay.mediaslider.model.SliderItem
 import nl.giejay.mediaslider.model.SliderItemType
 import nl.giejay.mediaslider.model.SliderItemViewHolder
@@ -29,8 +37,10 @@ class ScreenSlidePagerAdapter(private val context: Context,
                               private var items: List<SliderItemViewHolder>,
                               private val config: MediaSliderConfiguration,
                               private val currentIndex: () -> Int,
-                              private val exoPlayerListener: ExoPlayerListener) : PagerAdapter() {
+                              private val exoPlayerListener: ExoPlayerListener,
+                              private val scope: CoroutineScope) : PagerAdapter() {
     private var imageView: TouchImageView? = null
+    private val focusJobs: MutableMap<Int, MutableList<Job>> = HashMap()
     private val progressBars: MutableMap<Int, ProgressBar> = HashMap()
     private val failedPositions = mutableSetOf<String>()
 
@@ -100,14 +110,41 @@ class ScreenSlidePagerAdapter(private val context: Context,
                                   imageViewResource: Int,
                                   position: Int,
                                   model: SliderItem) {
-        imageView = imageRootLayout.findViewById(imageViewResource)
+        val imageView: TouchImageView = imageRootLayout.findViewById(imageViewResource)
+        this.imageView = imageView
         val progressBar = imageRootLayout.findViewById<ProgressBar>(R.id.mProgressBar)
         if (progressBar != null) {
             progressBars[position] = progressBar
         }
+        if (!config.glideTransformation.usesFocusAreas) {
+            loadImageIntoView(imageView, position, model, emptyList())
+            return
+        }
+        // fetch the focus areas (e.g. faces) first so the crop can be positioned around them
+        val job = scope.launch(Dispatchers.Main) {
+            val focusAreas = withContext(Dispatchers.IO) {
+                try {
+                    withTimeoutOrNull(FOCUS_AREA_TIMEOUT_MS) { model.getFocusAreas() }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.w(e, "Could not load focus areas for %s", model.id)
+                    null
+                }
+            } ?: emptyList()
+            loadImageIntoView(imageView, position, model, focusAreas)
+        }
+        focusJobs.getOrPut(position) { mutableListOf() }.add(job)
+    }
+
+    private fun loadImageIntoView(imageView: TouchImageView,
+                                  position: Int,
+                                  model: SliderItem,
+                                  focusAreas: List<FocusArea>) {
+        val transformation = config.glideTransformation.transform(context, config, focusAreas)
         var glideLoader = Glide.with(context)
             .load(if (config.isOnlyUseThumbnails) model.thumbnailUrl else model.url)
-            .transform(config.glideTransformation.transform(context, config))
+            .transform(transformation)
             .listener(object : RequestListener<Drawable> {
                 override fun onLoadFailed(e: GlideException?,
                                           model: Any?,
@@ -131,9 +168,9 @@ class ScreenSlidePagerAdapter(private val context: Context,
         if (!config.isOnlyUseThumbnails) {
             glideLoader = glideLoader.thumbnail(Glide.with(context)
                 .load(model.thumbnailUrl)
-                .transform(config.glideTransformation.transform(context, config)))
+                .transform(transformation))
         }
-        glideLoader.into(imageView!!)
+        glideLoader.into(imageView)
     }
 
     override fun getCount(): Int {
@@ -146,6 +183,7 @@ class ScreenSlidePagerAdapter(private val context: Context,
 
     override fun destroyItem(container: ViewGroup, position: Int, `object`: Any) {
         val view = `object` as View
+        focusJobs.remove(position)?.forEach { it.cancel() }
         if (view is ExoPlayerView) {
             view.releasePlayer()
         } else {
@@ -155,5 +193,9 @@ class ScreenSlidePagerAdapter(private val context: Context,
             }
         }
         container.removeView(view)
+    }
+
+    companion object {
+        private const val FOCUS_AREA_TIMEOUT_MS = 3000L
     }
 }

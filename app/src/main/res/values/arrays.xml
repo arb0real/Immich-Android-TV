@@ -62,12 +62,14 @@
         <item>Center Inside (keep image width/height)</item>
         <item>Center Crop (fit screen)</item>
         <item>Safe Center Crop (max crop percentage)</item>
+        <item>Smart Crop (like Safe Center Crop, but keeps faces in view)</item>
     </string-array>
 
     <array name="glide_transformation_keys">
         <item>CENTER_INSIDE</item>
         <item>CENTER_CROP</item>
         <item>SAFE_CENTER_CROP</item>
+        <item>SMART_CROP</item>
     </array>
 
     <string-array name="albums_order">
