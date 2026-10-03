@@ -2,6 +2,7 @@ package nl.giejay.android.tv.immich.api.service
 
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.Asset
+import nl.giejay.android.tv.immich.api.model.AssetFace
 import nl.giejay.android.tv.immich.api.model.Memory
 import nl.giejay.android.tv.immich.api.model.PeopleResponse
 import nl.giejay.android.tv.immich.api.model.SearchRequest
@@ -33,6 +34,9 @@ interface ApiService {
 
     @GET("assets/{id}")
     suspend fun getAsset(@Path("id") id: String): Response<Asset>
+
+    @GET("faces")
+    suspend fun getFaces(@Query("id") assetId: String): Response<List<AssetFace>>
 
     @GET("people")
     suspend fun listPeople(): Response<PeopleResponse>

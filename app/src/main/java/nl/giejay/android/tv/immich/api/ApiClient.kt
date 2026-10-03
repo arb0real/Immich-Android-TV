@@ -7,6 +7,7 @@ import arrow.core.flatMap
 import arrow.core.getOrElse
 import nl.giejay.android.tv.immich.api.model.Album
 import nl.giejay.android.tv.immich.api.model.Asset
+import nl.giejay.android.tv.immich.api.model.AssetFace
 import nl.giejay.android.tv.immich.api.model.AssetResponse
 import nl.giejay.android.tv.immich.api.model.Folder
 import nl.giejay.android.tv.immich.api.model.Memory
@@ -266,6 +267,10 @@ class ApiClient(private val config: ApiClientConfig) {
 
     suspend fun getAsset(id: String): Either<String, Asset> {
         return executeAPICall(200) { service.getAsset(id) }
+    }
+
+    suspend fun getFaces(assetId: String): Either<String, List<AssetFace>> {
+        return executeAPICall(200) { service.getFaces(assetId) }
     }
 
     suspend fun updateFavorite(id: String, isFavorite: Boolean): Either<String, Asset> {

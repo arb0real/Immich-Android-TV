@@ -174,7 +174,8 @@ open class MediaSliderView(context: Context) : ConstraintLayout(context) {
             config.items,
             config,
             { mPager.currentItem },
-            listener
+            listener,
+            ioScope
         )
 
         try {

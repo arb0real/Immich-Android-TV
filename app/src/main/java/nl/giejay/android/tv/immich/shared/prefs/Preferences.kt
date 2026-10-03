@@ -281,12 +281,12 @@ data object SLIDER_MERGE_PORTRAIT_PHOTOS : BooleanPref(true,
     ImmichApplication.appContext!!.getString(R.string.merge_portrait_photos_desc))
 
 data object SLIDER_MAX_CUT_OFF_WIDTH : IntSeekbarPref(20,
-    ImmichApplication.appContext!!.getString(R.string.safe_center_crop_max_cutoff_height),
-    ImmichApplication.appContext!!.getString(R.string.safe_center_crop_max_cutoff_height_desc))
-
-data object SLIDER_MAX_CUT_OFF_HEIGHT : IntSeekbarPref(20,
     ImmichApplication.appContext!!.getString(R.string.safe_center_crop_max_cutoff_width),
     ImmichApplication.appContext!!.getString(R.string.safe_center_crop_max_cutoff_width_desc))
+
+data object SLIDER_MAX_CUT_OFF_HEIGHT : IntSeekbarPref(20,
+    ImmichApplication.appContext!!.getString(R.string.safe_center_crop_max_cutoff_height),
+    ImmichApplication.appContext!!.getString(R.string.safe_center_crop_max_cutoff_height_desc))
 
 data object SLIDER_GLIDE_TRANSFORMATION : EnumPref<GlideTransformations>(GlideTransformations.CENTER_INSIDE,
     ImmichApplication.appContext!!.getString(R.string.photo_transformation),
